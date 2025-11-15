@@ -1,0 +1,97 @@
+╔══════════════════════════════════════════════════════════════════╗
+║                  🚀 TREASURYFLOW QUICK FIX                       ║
+║                  Connection Refused Error                        ║
+╚══════════════════════════════════════════════════════════════════╝
+
+📋 PROBLEM: ERR_CONNECTION_REFUSED at http://localhost:3000
+
+🔍 DIAGNOSIS (Top 2 Issues):
+
+   1. Dev Server Not Running (90% confidence) ⭐⭐⭐⭐⭐
+      → The Next.js server simply isn't started
+      
+   2. Port Conflicts (60% confidence) ⭐⭐⭐⭐
+      → Another process is blocking port 3000 or 8545
+
+✅ SOLUTION (Choose ONE):
+
+┌──────────────────────────────────────────────────────────────────┐
+│ OPTION 1: One-Click Fix (RECOMMENDED)                           │
+└──────────────────────────────────────────────────────────────────┘
+
+   1. Double-click: SIMPLE_START.bat
+   2. Wait 10 seconds
+   3. Open browser: http://localhost:3000
+   
+   ✓ Automatically kills conflicting processes
+   ✓ Starts Hardhat node in background
+   ✓ Opens dev server in new window
+
+┌──────────────────────────────────────────────────────────────────┐
+│ OPTION 2: Manual Start                                          │
+└──────────────────────────────────────────────────────────────────┘
+
+   Open TWO terminal windows:
+   
+   Terminal 1 (Hardhat):
+   $ npx hardhat node
+   
+   Terminal 2 (Frontend):
+   $ cd frontend
+   $ npm run dev
+   
+   Then open: http://localhost:3000
+
+┌──────────────────────────────────────────────────────────────────┐
+│ OPTION 3: Nuclear Reset (If nothing else works)                 │
+└──────────────────────────────────────────────────────────────────┘
+
+   $ taskkill /F /IM node.exe
+   $ cd frontend
+   $ rmdir /s /q node_modules .next
+   $ npm install
+   $ npm run dev
+
+🔧 VALIDATION:
+
+   Check if services are running:
+   $ netstat -ano | findstr "3000 8545"
+   
+   Expected output:
+   TCP    0.0.0.0:3000    LISTENING    [PID]
+   TCP    127.0.0.1:8545  LISTENING    [PID]
+
+✅ SUCCESS INDICATORS:
+
+   ✓ Terminal shows: "✓ Ready in X seconds"
+   ✓ Browser loads landing page
+   ✓ "Connect Wallet" button visible
+   ✓ No red errors in console (F12)
+
+📚 DETAILED HELP:
+
+   Read: FIX_CONNECTION_ERROR.md (comprehensive guide)
+   
+   Covers:
+   - Root cause analysis
+   - Step-by-step troubleshooting
+   - Common errors and fixes
+   - Validation checklist
+
+🎯 NEXT STEPS AFTER FIX:
+
+   1. Test landing page
+   2. Go to /dashboard
+   3. Try /approvals page
+   4. Test wallet connection
+   5. Schedule a test payment
+
+═══════════════════════════════════════════════════════════════════
+
+💡 TIP: If you see "EADDRINUSE" error, another process is using
+        the port. SIMPLE_START.bat handles this automatically.
+
+🆘 STILL STUCK? Check browser console (F12) for specific errors
+                and search FIX_CONNECTION_ERROR.md for solutions.
+
+═══════════════════════════════════════════════════════════════════

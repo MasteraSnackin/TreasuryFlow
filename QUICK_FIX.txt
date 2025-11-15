@@ -1,0 +1,58 @@
+═══════════════════════════════════════════════════════════════
+  TREASURYFLOW - ONE-COMMAND FIX
+═══════════════════════════════════════════════════════════════
+
+PROBLEM: Page keeps loading, dependencies not installed properly
+
+SOLUTION: Copy and paste this ENTIRE command into a NEW terminal:
+
+───────────────────────────────────────────────────────────────
+
+taskkill /F /IM node.exe & timeout /t 2 /nobreak & cd c:\Users\first\OneDrive\Desktop\Hackathon\TreasuryFlowv1\frontend & rmdir /s /q node_modules & del package-lock.json & rmdir /s /q .next & npm install & npm run dev
+
+───────────────────────────────────────────────────────────────
+
+WHAT IT DOES:
+1. Kills all Node.js processes
+2. Waits 2 seconds
+3. Navigates to frontend folder
+4. Deletes node_modules folder
+5. Deletes package-lock.json
+6. Deletes .next cache
+7. Installs ALL dependencies (should see 400+ packages)
+8. Starts dev server
+
+EXPECTED OUTPUT:
+- "added 400+ packages" (not 145)
+- "Ready in X seconds"
+- "Local: http://localhost:3000"
+
+IF IT WORKS:
+✅ Visit http://localhost:3000
+✅ Visit http://localhost:3000/test-phase1
+
+═══════════════════════════════════════════════════════════════
+
+ALTERNATIVE (if above doesn't work):
+
+1. Close VSCode completely
+2. Open NEW Command Prompt
+3. Run these commands ONE BY ONE:
+
+cd c:\Users\first\OneDrive\Desktop\Hackathon\TreasuryFlowv1\frontend
+rmdir /s /q node_modules
+del package-lock.json  
+rmdir /s /q .next
+npm install
+npm run dev
+
+═══════════════════════════════════════════════════════════════
+
+VERIFICATION:
+After npm install, check package count:
+
+dir node_modules | find /c "<DIR>"
+
+Should show 400+, not 3-5
+
+═══════════════════════════════════════════════════════════════

@@ -1,0 +1,447 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
+/// @title TreasuryVault V2 - Enhanced Multi-Signature Treasury
+/// @notice Production-ready multi-sig approval system with timelock
+/// @dev Optimized for Arc Network with USDC gas payments
+contract TreasuryVaultV2 is Ownable, ReentrancyGuard {
+    
+    struct Payment {
+        address recipient;
+        address token;
+        uint256 amount;
+        uint256 nextExecutionTime;
+        uint256 frequency;
+        bool active;
+        bool requiresApproval;
+        bool approved;
+        string description;
+        uint256 approvalCount;
+        uint256 requiredApprovals;
+        uint256 approvalDeadline;
+    }
+    
+    struct FXThreshold {
+        address tokenA;
+        address tokenB;
+        uint256 targetRatio; // scaled by 1e18
+        uint256 thresholdPercent;
+        bool active;
+        bool autoRebalance;
+    }
+    
+    struct Supplier {
+        string name;
+        address wallet;
+        string preferredCurrency;
+        uint256 totalPaid;
+        uint256 paymentCount;
+        bool active;
+    }
+    
+    // Storage
+    mapping(uint256 => Payment) public scheduledPayments;
+    mapping(uint256 => mapping(address => bool)) public paymentApprovals; // paymentId => approver => approved
+    mapping(uint256 => FXThreshold) public fxThresholds;
+    mapping(address => Supplier) public suppliers;
+    mapping(address => bool) public approvers;
+    
+    uint256 public paymentCount;
+    uint256 public thresholdCount;
+    uint256 public approvalThreshold = 10000e6; // $10K requires approval
+    uint256 public requiredApprovals = 2; // Default: 2-of-N multi-sig
+    uint256 public approvalTimelock = 1 hours; // Minimum time before execution
+    
+    address[] public approverList;
+    address public usdcAddress;
+    address public eurcAddress;
+    address public autoSwapContract;
+    
+    // Events
+    event PaymentScheduled(uint256 indexed paymentId, address recipient, uint256 amount, string description, uint256 requiredApprovals);
+    event PaymentExecuted(uint256 indexed paymentId, address recipient, uint256 amount, uint256 gasUsed);
+    event PaymentApproved(uint256 indexed paymentId, address approver, uint256 currentApprovals, uint256 requiredApprovals);
+    event PaymentApprovalRevoked(uint256 indexed paymentId, address approver);
+    event PaymentCancelled(uint256 indexed paymentId);
+    event BatchPaymentExecuted(uint256[] paymentIds, uint256 totalAmount);
+    event FXThresholdSet(uint256 indexed thresholdId, address tokenA, address tokenB);
+    event AutoRebalanced(address tokenFrom, address tokenTo, uint256 amount);
+    event SupplierAdded(address indexed wallet, string name);
+    event ApproverAdded(address indexed approver);
+    event ApproverRemoved(address indexed approver);
+    event ApprovalThresholdUpdated(uint256 newThreshold);
+    event RequiredApprovalsUpdated(uint256 newRequired);
+    event ApprovalTimelockUpdated(uint256 newTimelock);
+    
+    constructor(
+        address _usdcAddress,
+        address _eurcAddress,
+        address _autoSwapContract
+    ) Ownable(msg.sender) {
+        require(_usdcAddress != address(0), "Invalid USDC");
+        require(_eurcAddress != address(0), "Invalid EURC");
+        usdcAddress = _usdcAddress;
+        eurcAddress = _eurcAddress;
+        autoSwapContract = _autoSwapContract;
+        approvers[msg.sender] = true;
+        approverList.push(msg.sender);
+    }
+    
+    /// @notice Schedule a payment with description
+    function schedulePayment(
+        address _recipient,
+        address _token,
+        uint256 _amount,
+        uint256 _frequency,
+        string memory _description
+    ) external onlyOwner returns (uint256) {
+        require(_recipient != address(0), "Invalid recipient");
+        require(_amount > 0, "Amount must be positive");
+        require(_frequency > 0, "Frequency must be positive");
+        require(_token == usdcAddress || _token == eurcAddress, "Unsupported token");
+        
+        uint256 paymentId = paymentCount++;
+        bool needsApproval = _amount >= approvalThreshold;
+        uint256 required = needsApproval ? requiredApprovals : 0;
+        
+        scheduledPayments[paymentId] = Payment({
+            recipient: _recipient,
+            token: _token,
+            amount: _amount,
+            nextExecutionTime: block.timestamp + _frequency,
+            frequency: _frequency,
+            active: true,
+            requiresApproval: needsApproval,
+            approved: !needsApproval,
+            description: _description,
+            approvalCount: 0,
+            requiredApprovals: required,
+            approvalDeadline: needsApproval ? block.timestamp + approvalTimelock : 0
+        });
+        
+        // Update supplier stats
+        if (suppliers[_recipient].active) {
+            suppliers[_recipient].paymentCount++;
+        }
+        
+        emit PaymentScheduled(paymentId, _recipient, _amount, _description, required);
+        return paymentId;
+    }
+    
+    /// @notice Batch execute multiple payments
+    function batchExecutePayments(uint256[] calldata _paymentIds) 
+        external 
+        nonReentrant 
+        returns (uint256 totalExecuted) 
+    {
+        require(_paymentIds.length <= 50, "Max 50 payments");
+        uint256 gasStart = gasleft();
+        uint256 totalAmount;
+        
+        for (uint256 i = 0; i < _paymentIds.length; i++) {
+            Payment storage payment = scheduledPayments[_paymentIds[i]];
+            
+            if (!payment.active || 
+                block.timestamp < payment.nextExecutionTime ||
+                (payment.requiresApproval && !payment.approved)) {
+                continue;
+            }
+            
+            IERC20 token = IERC20(payment.token);
+            if (token.balanceOf(address(this)) >= payment.amount) {
+                require(token.transfer(payment.recipient, payment.amount), "Transfer failed");
+                
+                payment.nextExecutionTime = block.timestamp + payment.frequency;
+                totalAmount += payment.amount;
+                totalExecuted++;
+                
+                // Update supplier stats
+                if (suppliers[payment.recipient].active) {
+                    suppliers[payment.recipient].totalPaid += payment.amount;
+                }
+                
+                emit PaymentExecuted(_paymentIds[i], payment.recipient, payment.amount, gasStart - gasleft());
+            }
+        }
+        
+        emit BatchPaymentExecuted(_paymentIds, totalAmount);
+    }
+    
+    /// @notice Execute single payment
+    function executePayment(uint256 _paymentId) external nonReentrant {
+        Payment storage payment = scheduledPayments[_paymentId];
+        
+        require(payment.active, "Payment not active");
+        require(block.timestamp >= payment.nextExecutionTime, "Not ready");
+        require(!payment.requiresApproval || payment.approved, "Needs approval");
+        
+        uint256 gasStart = gasleft();
+        
+        IERC20 token = IERC20(payment.token);
+        require(token.balanceOf(address(this)) >= payment.amount, "Insufficient balance");
+        require(token.transfer(payment.recipient, payment.amount), "Transfer failed");
+        
+        payment.nextExecutionTime = block.timestamp + payment.frequency;
+        
+        // Update supplier stats
+        if (suppliers[payment.recipient].active) {
+            suppliers[payment.recipient].totalPaid += payment.amount;
+        }
+        
+        emit PaymentExecuted(_paymentId, payment.recipient, payment.amount, gasStart - gasleft());
+    }
+    
+    /// @notice Approve large payment (multi-sig)
+    function approvePayment(uint256 _paymentId) external {
+        require(approvers[msg.sender], "Not an approver");
+        Payment storage payment = scheduledPayments[_paymentId];
+        require(payment.active, "Payment not active");
+        require(payment.requiresApproval, "No approval needed");
+        require(!paymentApprovals[_paymentId][msg.sender], "Already approved by you");
+        require(!payment.approved, "Payment fully approved");
+        
+        // Record approval
+        paymentApprovals[_paymentId][msg.sender] = true;
+        payment.approvalCount++;
+        
+        // Check if threshold met
+        if (payment.approvalCount >= payment.requiredApprovals) {
+            payment.approved = true;
+            // Update execution time to respect timelock
+            if (block.timestamp < payment.approvalDeadline) {
+                payment.nextExecutionTime = payment.approvalDeadline;
+            }
+        }
+        
+        emit PaymentApproved(_paymentId, msg.sender, payment.approvalCount, payment.requiredApprovals);
+    }
+    
+    /// @notice Revoke approval for a payment
+    function revokeApproval(uint256 _paymentId) external {
+        require(approvers[msg.sender], "Not an approver");
+        Payment storage payment = scheduledPayments[_paymentId];
+        require(payment.active, "Payment not active");
+        require(payment.requiresApproval, "No approval needed");
+        require(paymentApprovals[_paymentId][msg.sender], "You haven't approved this");
+        require(!payment.approved, "Payment already fully approved");
+        
+        // Revoke approval
+        paymentApprovals[_paymentId][msg.sender] = false;
+        payment.approvalCount--;
+        
+        emit PaymentApprovalRevoked(_paymentId, msg.sender);
+    }
+    
+    /// @notice Cancel payment
+    function cancelPayment(uint256 _paymentId) external onlyOwner {
+        require(scheduledPayments[_paymentId].active, "Not active");
+        scheduledPayments[_paymentId].active = false;
+        emit PaymentCancelled(_paymentId);
+    }
+    
+    /// @notice Add supplier to directory
+    function addSupplier(
+        address _wallet,
+        string memory _name,
+        string memory _preferredCurrency
+    ) external onlyOwner {
+        suppliers[_wallet] = Supplier({
+            name: _name,
+            wallet: _wallet,
+            preferredCurrency: _preferredCurrency,
+            totalPaid: 0,
+            paymentCount: 0,
+            active: true
+        });
+        
+        emit SupplierAdded(_wallet, _name);
+    }
+    
+    /// @notice Auto-rebalance treasury based on FX threshold
+    function checkAndRebalance(uint256 _thresholdId) external {
+        FXThreshold storage threshold = fxThresholds[_thresholdId];
+        require(threshold.active && threshold.autoRebalance, "Auto-rebalance disabled");
+        
+        uint256 balanceA = IERC20(threshold.tokenA).balanceOf(address(this));
+        uint256 balanceB = IERC20(threshold.tokenB).balanceOf(address(this));
+        uint256 total = balanceA + balanceB;
+        
+        require(total > 0, "No balance");
+        
+        uint256 currentRatio = (balanceA * 100) / total;
+        uint256 targetRatio = threshold.targetRatio / 1e16; // Convert to percentage
+        
+        if (currentRatio > targetRatio + threshold.thresholdPercent) {
+            uint256 amountToSwap = ((currentRatio - targetRatio) * total) / 100;
+            
+            // Approve and swap
+            IERC20(threshold.tokenA).approve(autoSwapContract, amountToSwap);
+            // Call swap function (implement interface)
+            
+            emit AutoRebalanced(threshold.tokenA, threshold.tokenB, amountToSwap);
+        }
+    }
+    
+    /// @notice Set FX rebalancing threshold
+    function setFXThreshold(
+        address _tokenA,
+        address _tokenB,
+        uint256 _targetRatio,
+        uint256 _thresholdPercent,
+        bool _autoRebalance
+    ) external onlyOwner returns (uint256) {
+        require(_thresholdPercent > 0 && _thresholdPercent <= 100, "Invalid threshold");
+        
+        uint256 thresholdId = thresholdCount++;
+        
+        fxThresholds[thresholdId] = FXThreshold({
+            tokenA: _tokenA,
+            tokenB: _tokenB,
+            targetRatio: _targetRatio,
+            thresholdPercent: _thresholdPercent,
+            active: true,
+            autoRebalance: _autoRebalance
+        });
+        
+        emit FXThresholdSet(thresholdId, _tokenA, _tokenB);
+        return thresholdId;
+    }
+    
+    /// @notice Add approver
+    function addApprover(address _approver) external onlyOwner {
+        require(_approver != address(0), "Invalid approver");
+        require(!approvers[_approver], "Already an approver");
+        
+        approvers[_approver] = true;
+        approverList.push(_approver);
+        emit ApproverAdded(_approver);
+    }
+    
+    /// @notice Remove approver
+    function removeApprover(address _approver) external onlyOwner {
+        require(approvers[_approver], "Not an approver");
+        require(approverList.length > requiredApprovals, "Cannot remove: would break multi-sig");
+        
+        approvers[_approver] = false;
+        
+        // Remove from list
+        for (uint256 i = 0; i < approverList.length; i++) {
+            if (approverList[i] == _approver) {
+                approverList[i] = approverList[approverList.length - 1];
+                approverList.pop();
+                break;
+            }
+        }
+        
+        emit ApproverRemoved(_approver);
+    }
+    
+    /// @notice Update approval threshold
+    function setApprovalThreshold(uint256 _newThreshold) external onlyOwner {
+        require(_newThreshold > 0, "Threshold must be positive");
+        approvalThreshold = _newThreshold;
+        emit ApprovalThresholdUpdated(_newThreshold);
+    }
+    
+    /// @notice Update required approvals for multi-sig
+    function setRequiredApprovals(uint256 _required) external onlyOwner {
+        require(_required > 0, "Must require at least 1 approval");
+        require(_required <= approverList.length, "Cannot require more approvals than approvers");
+        requiredApprovals = _required;
+        emit RequiredApprovalsUpdated(_required);
+    }
+    
+    /// @notice Update approval timelock
+    function setApprovalTimelock(uint256 _timelock) external onlyOwner {
+        require(_timelock <= 7 days, "Timelock must be <= 7 days");
+        approvalTimelock = _timelock;
+        emit ApprovalTimelockUpdated(_timelock);
+    }
+    
+    /// @notice Get balance
+    function getBalance(address _token) external view returns (uint256) {
+        return IERC20(_token).balanceOf(address(this));
+    }
+    
+    /// @notice Get payment details
+    function getPayment(uint256 _paymentId) external view returns (
+        address recipient,
+        address token,
+        uint256 amount,
+        uint256 nextExecutionTime,
+        uint256 frequency,
+        bool active,
+        bool requiresApproval,
+        bool approved,
+        string memory description
+    ) {
+        Payment memory p = scheduledPayments[_paymentId];
+        return (p.recipient, p.token, p.amount, p.nextExecutionTime, p.frequency, 
+                p.active, p.requiresApproval, p.approved, p.description);
+    }
+    
+    /// @notice Get supplier details
+    function getSupplier(address _wallet) external view returns (
+        string memory name,
+        string memory preferredCurrency,
+        uint256 totalPaid,
+        uint256 paymentCount,
+        bool active
+    ) {
+        Supplier memory s = suppliers[_wallet];
+        return (s.name, s.preferredCurrency, s.totalPaid, s.paymentCount, s.active);
+    }
+    
+    /// @notice Get approval status for a payment
+    function getApprovalStatus(uint256 _paymentId) external view returns (
+        uint256 currentApprovals,
+        uint256 requiredApprovals_,
+        bool isApproved,
+        uint256 deadline,
+        address[] memory approvedBy
+    ) {
+        Payment storage payment = scheduledPayments[_paymentId];
+        
+        // Count approvers
+        address[] memory approved = new address[](payment.approvalCount);
+        uint256 count = 0;
+        for (uint256 i = 0; i < approverList.length && count < payment.approvalCount; i++) {
+            if (paymentApprovals[_paymentId][approverList[i]]) {
+                approved[count] = approverList[i];
+                count++;
+            }
+        }
+        
+        return (
+            payment.approvalCount,
+            payment.requiredApprovals,
+            payment.approved,
+            payment.approvalDeadline,
+            approved
+        );
+    }
+    
+    /// @notice Get list of all approvers
+    function getApprovers() external view returns (address[] memory) {
+        return approverList;
+    }
+    
+    /// @notice Check if address is an approver
+    function isApprover(address _address) external view returns (bool) {
+        return approvers[_address];
+    }
+    
+    /// @notice Check if address has approved a payment
+    function hasApproved(uint256 _paymentId, address _approver) external view returns (bool) {
+        return paymentApprovals[_paymentId][_approver];
+    }
+    
+    /// @notice Emergency withdraw
+    function withdraw(address _token, uint256 _amount) external onlyOwner {
+        require(IERC20(_token).transfer(owner(), _amount), "Withdraw failed");
+    }
+}

@@ -1,0 +1,401 @@
+'use client'
+
+import { useState } from 'react'
+import { Download, FileText, Calendar, DollarSign, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react'
+
+interface TaxCategory {
+  name: string
+  amount: number
+  percentage: number
+  deductible: boolean
+}
+
+interface QuarterlyReport {
+  quarter: string
+  year: number
+  totalIncome: number
+  totalExpenses: number
+  netIncome: number
+  estimatedTax: number
+  categories: TaxCategory[]
+}
+
+export default function TaxReporting() {
+  const [selectedYear, setSelectedYear] = useState(2024)
+  const [selectedQuarter, setSelectedQuarter] = useState<number | null>(null)
+
+  // Mock data
+  const quarters: QuarterlyReport[] = [
+    {
+      quarter: 'Q1',
+      year: 2024,
+      totalIncome: 250000,
+      totalExpenses: 168250,
+      netIncome: 81750,
+      estimatedTax: 20438,
+      categories: [
+        { name: 'Salaries & Wages', amount: 100000, percentage: 59.4, deductible: true },
+        { name: 'Suppliers & Contractors', amount: 45000, percentage: 26.7, deductible: true },
+        { name: 'Infrastructure & Software', amount: 12750, percentage: 7.6, deductible: true },
+        { name: 'Marketing & Advertising', amount: 8500, percentage: 5.1, deductible: true },
+        { name: 'Office & Operations', amount: 2000, percentage: 1.2, deductible: true }
+      ]
+    },
+    {
+      quarter: 'Q2',
+      year: 2024,
+      totalIncome: 280000,
+      totalExpenses: 185000,
+      netIncome: 95000,
+      estimatedTax: 23750,
+      categories: [
+        { name: 'Salaries & Wages', amount: 105000, percentage: 56.8, deductible: true },
+        { name: 'Suppliers & Contractors', amount: 52000, percentage: 28.1, deductible: true },
+        { name: 'Infrastructure & Software', amount: 15000, percentage: 8.1, deductible: true },
+        { name: 'Marketing & Advertising', amount: 10000, percentage: 5.4, deductible: true },
+        { name: 'Office & Operations', amount: 3000, percentage: 1.6, deductible: true }
+      ]
+    },
+    {
+      quarter: 'Q3',
+      year: 2024,
+      totalIncome: 310000,
+      totalExpenses: 195000,
+      netIncome: 115000,
+      estimatedTax: 28750,
+      categories: [
+        { name: 'Salaries & Wages', amount: 110000, percentage: 56.4, deductible: true },
+        { name: 'Suppliers & Contractors', amount: 55000, percentage: 28.2, deductible: true },
+        { name: 'Infrastructure & Software', amount: 16000, percentage: 8.2, deductible: true },
+        { name: 'Marketing & Advertising', amount: 11000, percentage: 5.6, deductible: true },
+        { name: 'Office & Operations', amount: 3000, percentage: 1.5, deductible: true }
+      ]
+    },
+    {
+      quarter: 'Q4',
+      year: 2024,
+      totalIncome: 295000,
+      totalExpenses: 188000,
+      netIncome: 107000,
+      estimatedTax: 26750,
+      categories: [
+        { name: 'Salaries & Wages', amount: 108000, percentage: 57.4, deductible: true },
+        { name: 'Suppliers & Contractors', amount: 50000, percentage: 26.6, deductible: true },
+        { name: 'Infrastructure & Software', amount: 15000, percentage: 8.0, deductible: true },
+        { name: 'Marketing & Advertising', amount: 12000, percentage: 6.4, deductible: true },
+        { name: 'Office & Operations', amount: 3000, percentage: 1.6, deductible: true }
+      ]
+    }
+  ]
+
+  const yearlyTotal = quarters.reduce((sum, q) => ({
+    income: sum.income + q.totalIncome,
+    expenses: sum.expenses + q.totalExpenses,
+    netIncome: sum.netIncome + q.netIncome,
+    tax: sum.tax + q.estimatedTax
+  }), { income: 0, expenses: 0, netIncome: 0, tax: 0 })
+
+  function exportToCSV(quarter?: QuarterlyReport) {
+    const data = quarter ? [quarter] : quarters
+    
+    let csv = 'Quarter,Year,Total Income,Total Expenses,Net Income,Estimated Tax\n'
+    data.forEach(q => {
+      csv += `${q.quarter},${q.year},${q.totalIncome},${q.totalExpenses},${q.netIncome},${q.estimatedTax}\n`
+    })
+    
+    csv += '\n\nCategory Breakdown\n'
+    csv += 'Quarter,Category,Amount,Percentage,Deductible\n'
+    data.forEach(q => {
+      q.categories.forEach(cat => {
+        csv += `${q.quarter},${cat.name},${cat.amount},${cat.percentage}%,${cat.deductible ? 'Yes' : 'No'}\n`
+      })
+    })
+
+    downloadFile(csv, `tax-report-${quarter ? quarter.quarter : 'full'}-${selectedYear}.csv`, 'text/csv')
+  }
+
+  function exportToIRS() {
+    // Generate IRS Form 1120 compatible format
+    const irsData = `
+IRS Form 1120 - Corporate Income Tax Return
+Tax Year: ${selectedYear}
+
+INCOME
+Gross Receipts: $${yearlyTotal.income.toLocaleString()}
+
+DEDUCTIONS
+${quarters[0].categories.map(cat => 
+  `${cat.name}: $${quarters.reduce((sum, q) => 
+    sum + (q.categories.find(c => c.name === cat.name)?.amount || 0), 0
+  ).toLocaleString()}`
+).join('\n')}
+
+Total Deductions: $${yearlyTotal.expenses.toLocaleString()}
+Taxable Income: $${yearlyTotal.netIncome.toLocaleString()}
+Estimated Tax: $${yearlyTotal.tax.toLocaleString()}
+
+Generated by TreasuryFlow on ${new Date().toLocaleDateString()}
+    `.trim()
+
+    downloadFile(irsData, `irs-form-1120-${selectedYear}.txt`, 'text/plain')
+  }
+
+  function downloadFile(content: string, filename: string, type: string) {
+    const blob = new Blob([content], { type })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="card">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Tax Reporting</h1>
+            <p className="text-gray-600">Generate tax-ready reports and export for filing</p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => exportToCSV()}
+              className="btn-secondary inline-flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Export CSV
+            </button>
+            <button
+              onClick={exportToIRS}
+              className="btn-primary inline-flex items-center gap-2"
+            >
+              <FileText className="w-4 h-4" />
+              IRS Format
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Year Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="card">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+              <TrendingUp className="w-6 h-6 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Total Income</p>
+              <p className="text-2xl font-bold">${yearlyTotal.income.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+              <DollarSign className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Total Expenses</p>
+              <p className="text-2xl font-bold">${yearlyTotal.expenses.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <CheckCircle className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Net Income</p>
+              <p className="text-2xl font-bold">${yearlyTotal.netIncome.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+              <FileText className="w-6 h-6 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Estimated Tax</p>
+              <p className="text-2xl font-bold">${yearlyTotal.tax.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tax Filing Reminders */}
+      <div className="card bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-1" />
+          <div>
+            <h3 className="font-semibold text-yellow-900 mb-2">Upcoming Tax Deadlines</h3>
+            <ul className="space-y-1 text-sm text-yellow-800">
+              <li>• Q4 2024 Estimated Tax Payment: January 15, 2025</li>
+              <li>• Annual Corporate Tax Return (Form 1120): March 15, 2025</li>
+              <li>• Q1 2025 Estimated Tax Payment: April 15, 2025</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Quarterly Reports */}
+      <div className="card">
+        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Calendar className="w-6 h-6 text-blue-600" />
+          Quarterly Reports
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {quarters.map((quarter) => (
+            <div
+              key={quarter.quarter}
+              className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => setSelectedQuarter(selectedQuarter === parseInt(quarter.quarter[1]) ? null : parseInt(quarter.quarter[1]))}
+            >
+              {/* Quarter Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">{quarter.quarter} {quarter.year}</h3>
+                  <p className="text-sm text-gray-600">
+                    {quarter.quarter === 'Q1' && 'Jan - Mar'}
+                    {quarter.quarter === 'Q2' && 'Apr - Jun'}
+                    {quarter.quarter === 'Q3' && 'Jul - Sep'}
+                    {quarter.quarter === 'Q4' && 'Oct - Dec'}
+                  </p>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    exportToCSV(quarter)
+                  }}
+                  className="p-2 hover:bg-white rounded-lg transition-colors"
+                >
+                  <Download className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+
+              {/* Key Metrics */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Income</span>
+                  <span className="font-semibold text-green-600">${quarter.totalIncome.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Expenses</span>
+                  <span className="font-semibold text-red-600">${quarter.totalExpenses.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between pt-3 border-t border-gray-300">
+                  <span className="text-sm font-medium text-gray-900">Net Income</span>
+                  <span className="font-bold text-gray-900">${quarter.netIncome.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Est. Tax (25%)</span>
+                  <span className="font-semibold text-purple-600">${quarter.estimatedTax.toLocaleString()}</span>
+                </div>
+              </div>
+
+              {/* Expanded View */}
+              {selectedQuarter === parseInt(quarter.quarter[1]) && (
+                <div className="mt-4 pt-4 border-t border-gray-300">
+                  <h4 className="font-semibold text-gray-900 mb-3">Expense Breakdown</h4>
+                  <div className="space-y-2">
+                    {quarter.categories.map((cat, i) => (
+                      <div key={i} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                          <span className="text-gray-700">{cat.name}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-gray-600">{cat.percentage.toFixed(1)}%</span>
+                          <span className="font-medium text-gray-900 w-24 text-right">
+                            ${cat.amount.toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Category Analysis */}
+      <div className="card">
+        <h2 className="text-xl font-bold mb-4">Annual Category Breakdown</h2>
+        
+        <div className="space-y-4">
+          {quarters[0].categories.map((cat, i) => {
+            const yearlyAmount = quarters.reduce((sum, q) => 
+              sum + (q.categories.find(c => c.name === cat.name)?.amount || 0), 0
+            )
+            const percentage = (yearlyAmount / yearlyTotal.expenses) * 100
+
+            return (
+              <div key={i} className="p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-gray-900">{cat.name}</h3>
+                    {cat.deductible && (
+                      <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">
+                        Tax Deductible
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-gray-900">${yearlyAmount.toLocaleString()}</p>
+                    <p className="text-sm text-gray-600">{percentage.toFixed(1)}% of expenses</p>
+                  </div>
+                </div>
+                
+                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500"
+                    style={{ width: `${percentage}%` }}
+                  />
+                </div>
+
+                {/* Quarterly Breakdown */}
+                <div className="mt-3 grid grid-cols-4 gap-2">
+                  {quarters.map((q) => {
+                    const qAmount = q.categories.find(c => c.name === cat.name)?.amount || 0
+                    return (
+                      <div key={q.quarter} className="text-center p-2 bg-white rounded">
+                        <p className="text-xs text-gray-600">{q.quarter}</p>
+                        <p className="text-sm font-medium">${qAmount.toLocaleString()}</p>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Tax Tips */}
+      <div className="card bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200">
+        <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+          <CheckCircle className="w-5 h-5" />
+          Tax Optimization Tips
+        </h3>
+        <ul className="space-y-2 text-sm text-blue-800">
+          <li>• All business expenses shown are tax-deductible - keep receipts for audit purposes</li>
+          <li>• Consider accelerating expenses into current year for larger deductions</li>
+          <li>• Quarterly estimated tax payments help avoid penalties</li>
+          <li>• Consult with a tax professional for personalized advice</li>
+          <li>• Keep blockchain transaction records as proof of payment</li>
+        </ul>
+      </div>
+    </div>
+  )
+}
