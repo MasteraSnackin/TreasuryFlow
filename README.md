@@ -711,12 +711,6 @@ This project is licensed under the MIT License - see the [`LICENSE`](./LICENSE) 
 
 ---
 
-## ⭐ Star History
-
-If you find TreasuryFlow useful, please consider giving it a star! ⭐
-
-[![Star History Chart](https://api.star-history.com/svg?repos=yourusername/treasuryflow&type=Date)](https://star-history.com/#yourusername/treasuryflow&Date)
-
 ---
 
 <div align="center">
