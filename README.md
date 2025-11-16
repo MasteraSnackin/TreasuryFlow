@@ -4,6 +4,12 @@
 
 ### Enterprise Treasury Management Powered by Smart Contracts & AI
 
+TreasuryFlow - a revolutionary smart contract-powered treasury management system that transforms how businesses handle international payments.
+
+The Problem: Traditional treasury management is slow (3-5 days), expensive ($25-50 per wire), manual, and limited to business hours.
+
+Our Solution: TreasuryFlow uses Arc Network, Circle's stablecoins (USDC/EURC), and AI to enable instant, cheap, automated payments with built-in FX protection. Think of it as having a CFO, accountant, and international bank in one app - but 90% cheaper and 99.99% faster.
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tests](https://img.shields.io/badge/tests-48%2F48%20passing-brightgreen)](./test)
 [![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen)](./coverage)
@@ -561,7 +567,6 @@ npm test
 - [**Cross-Chain Bridge**](./docs/BRIDGE_GUIDE.md) - Transfer USDC across chains
 - [**Fiat On/Off Ramps**](./docs/FIAT_GUIDE.md) - Buy/sell USDC
 - [**Embedded Wallets**](./docs/WALLET_GUIDE.md) - Create and manage wallets
-- [**Demo Presentation**](./DEMO_PRESENTATION_SCRIPT.md) - 3-minute hackathon demo script
 
 ### Developer Guides
 - [**Architecture**](./docs/ARCHITECTURE.md) - System design (1,247 lines)
