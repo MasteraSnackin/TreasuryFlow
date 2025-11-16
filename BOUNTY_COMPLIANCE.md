@@ -98,10 +98,6 @@ CCTPBridge:       0x... (to be deployed)
 
 ## 🌉 Bounty #2: Best Cross-Chain USDC Experience with Circle's Bridge Kit and Arc
 
-**Prize:** $8,000  
-**Status:** ✅ 100% COMPLETE  
-**Score:** 98/100
-
 ### Requirements Checklist
 
 - [x] **Circle CCTP Integration**
