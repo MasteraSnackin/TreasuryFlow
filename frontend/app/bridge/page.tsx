@@ -5,7 +5,7 @@ import CrossChainBridge from '@/components/CrossChainBridge'
 import { ArrowLeftRight, Clock, Shield, Zap } from 'lucide-react'
 
 export default function BridgePage() {
-  const [showHistory, setShowHistory] = useState(false)
+  const [showHistory, setShowHistory] = useState(true) // Show history by default
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -190,91 +190,199 @@ export default function BridgePage() {
 
 // Transfer History Component
 function TransferHistory() {
-  // Mock data - replace with actual API call
+  // Enhanced mock data with more realistic transfers
   const transfers = [
     {
       id: '1',
-      amount: '1000.00',
+      amount: '5000.00',
       sourceChain: 'Arc Network',
       destChain: 'Ethereum',
       status: 'completed',
       timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      txHash: '0x1234...5678'
+      txHash: '0x1234567890abcdef1234567890abcdef12345678',
+      fee: '5.00',
+      duration: '8 minutes'
     },
     {
       id: '2',
-      amount: '500.00',
+      amount: '1500.00',
       sourceChain: 'Ethereum',
       destChain: 'Arc Network',
       status: 'pending',
-      timestamp: new Date(Date.now() - 10 * 60 * 1000),
-      txHash: '0xabcd...efgh'
+      timestamp: new Date(Date.now() - 5 * 60 * 1000),
+      txHash: '0xabcdef1234567890abcdef1234567890abcdef12',
+      fee: '1.50',
+      duration: 'In progress...'
     },
     {
       id: '3',
-      amount: '2500.00',
+      amount: '10000.00',
       sourceChain: 'Arc Network',
       destChain: 'Polygon',
       status: 'completed',
       timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
-      txHash: '0x9876...5432'
+      txHash: '0x9876543210fedcba9876543210fedcba98765432',
+      fee: '10.00',
+      duration: '6 minutes'
+    },
+    {
+      id: '4',
+      amount: '3200.00',
+      sourceChain: 'Arbitrum',
+      destChain: 'Arc Network',
+      status: 'completed',
+      timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      txHash: '0xfedcba9876543210fedcba9876543210fedcba98',
+      fee: '3.20',
+      duration: '7 minutes'
+    },
+    {
+      id: '5',
+      amount: '7500.00',
+      sourceChain: 'Arc Network',
+      destChain: 'Base',
+      status: 'completed',
+      timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      txHash: '0x1111222233334444555566667777888899990000',
+      fee: '7.50',
+      duration: '9 minutes'
+    },
+    {
+      id: '6',
+      amount: '2000.00',
+      sourceChain: 'Optimism',
+      destChain: 'Arc Network',
+      status: 'completed',
+      timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      txHash: '0xaaabbbcccdddeeefff000111222333444555666',
+      fee: '2.00',
+      duration: '5 minutes'
+    },
+    {
+      id: '7',
+      amount: '15000.00',
+      sourceChain: 'Arc Network',
+      destChain: 'Avalanche',
+      status: 'completed',
+      timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      txHash: '0x777888999aaabbbcccdddeeefffggg111222333',
+      fee: '15.00',
+      duration: '10 minutes'
+    },
+    {
+      id: '8',
+      amount: '4800.00',
+      sourceChain: 'Polygon',
+      destChain: 'Arc Network',
+      status: 'completed',
+      timestamp: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+      txHash: '0x444555666777888999aaabbbcccdddeeefffggg',
+      fee: '4.80',
+      duration: '8 minutes'
     }
   ]
 
+  // Calculate statistics
+  const totalVolume = transfers.reduce((sum, t) => sum + parseFloat(t.amount), 0)
+  const totalFees = transfers.reduce((sum, t) => sum + parseFloat(t.fee), 0)
+  const completedTransfers = transfers.filter(t => t.status === 'completed').length
+  const avgDuration = '7.5 minutes'
+
   return (
-    <div className="space-y-3">
-      {transfers.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          <ArrowLeftRight className="w-16 h-16 mx-auto mb-4 opacity-50" />
-          <p>No transfers yet</p>
+    <div className="space-y-6">
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+          <p className="text-sm text-blue-600 mb-1">Total Volume</p>
+          <p className="text-2xl font-bold text-blue-900">${totalVolume.toLocaleString()}</p>
         </div>
-      ) : (
-        transfers.map((transfer) => (
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+          <p className="text-sm text-green-600 mb-1">Completed</p>
+          <p className="text-2xl font-bold text-green-900">{completedTransfers}</p>
+        </div>
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+          <p className="text-sm text-purple-600 mb-1">Total Fees</p>
+          <p className="text-2xl font-bold text-purple-900">${totalFees.toFixed(2)}</p>
+        </div>
+        <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200">
+          <p className="text-sm text-orange-600 mb-1">Avg Duration</p>
+          <p className="text-2xl font-bold text-orange-900">{avgDuration}</p>
+        </div>
+      </div>
+
+      {/* Transfer List */}
+      <div className="space-y-3">
+        {transfers.length === 0 ? (
+          <div className="text-center py-12 text-gray-500">
+            <ArrowLeftRight className="w-16 h-16 mx-auto mb-4 opacity-50" />
+            <p>No transfers yet</p>
+          </div>
+        ) : (
+          transfers.map((transfer) => (
           <div
             key={transfer.id}
             className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <div className="flex items-center gap-4">
-              <div className={`w-2 h-2 rounded-full ${
-                transfer.status === 'completed' ? 'bg-green-500' :
-                transfer.status === 'pending' ? 'bg-yellow-500 animate-pulse' :
-                'bg-red-500'
-              }`} />
-              
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-semibold text-gray-900">{transfer.amount} USDC</span>
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                  transfer.status === 'completed' ? 'bg-green-500' :
+                  transfer.status === 'pending' ? 'bg-yellow-500 animate-pulse' :
+                  'bg-red-500'
+                }`} />
+                
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-lg text-gray-900">{transfer.amount} USDC</span>
                   <span className="text-gray-400">→</span>
-                  <span className="text-sm text-gray-600">
-                    {transfer.sourceChain} to {transfer.destChain}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                      {transfer.sourceChain}
+                    </span>
+                    <ArrowLeftRight className="w-3 h-3 text-gray-400" />
+                    <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">
+                      {transfer.destChain}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-gray-500">
-                  <span>{transfer.timestamp.toLocaleString()}</span>
-                  <a
-                    href={`https://explorer.arc.network/tx/${transfer.txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    {transfer.txHash}
-                  </a>
-                </div>
+              </div>
+              
+              <div className="flex items-center gap-4 text-xs text-gray-500 ml-6">
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {transfer.timestamp.toLocaleString()}
+                </span>
+                <span>Fee: ${transfer.fee}</span>
+                <span>Duration: {transfer.duration}</span>
+              </div>
+              
+              <div className="mt-2 ml-6">
+                <a
+                  href={`https://explorer.arc.network/tx/${transfer.txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-600 hover:underline font-mono"
+                >
+                  {transfer.txHash.slice(0, 20)}...{transfer.txHash.slice(-10)}
+                </a>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+            <div className="flex flex-col items-end gap-2">
+              <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
                 transfer.status === 'completed' ? 'bg-green-100 text-green-700' :
                 transfer.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
                 'bg-red-100 text-red-700'
               }`}>
                 {transfer.status.charAt(0).toUpperCase() + transfer.status.slice(1)}
               </span>
+              {transfer.status === 'completed' && (
+                <span className="text-xs text-gray-500">✓ Verified</span>
+              )}
             </div>
           </div>
-        ))
-      )}
+          ))
+        )}
+      </div>
     </div>
   )
 }

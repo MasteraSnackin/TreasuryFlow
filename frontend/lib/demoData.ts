@@ -17,7 +17,12 @@ export const DEMO_DATA = {
       description: 'Monthly design retainer',
       requiresApproval: false,
       approved: true,
-      active: true
+      active: true,
+      executionCount: 18,
+      totalPaid: '45000.00',
+      lastExecuted: new Date(Date.now() - 23 * 24 * 60 * 60 * 1000),
+      status: 'scheduled',
+      category: 'Design Services'
     },
     {
       id: 1,
@@ -30,7 +35,12 @@ export const DEMO_DATA = {
       description: 'Weekly development sprint',
       requiresApproval: false,
       approved: true,
-      active: true
+      active: true,
+      executionCount: 24,
+      totalPaid: '100800.00',
+      lastExecuted: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      status: 'ready_soon',
+      category: 'Development'
     },
     {
       id: 2,
@@ -43,7 +53,12 @@ export const DEMO_DATA = {
       description: 'Infrastructure hosting',
       requiresApproval: false,
       approved: true,
-      active: true
+      active: true,
+      executionCount: 15,
+      totalPaid: '12750.00',
+      lastExecuted: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      status: 'scheduled',
+      category: 'Infrastructure'
     },
     {
       id: 3,
@@ -56,7 +71,48 @@ export const DEMO_DATA = {
       description: 'Q1 Marketing Campaign',
       requiresApproval: true,
       approved: false,
-      active: true
+      active: true,
+      executionCount: 0,
+      totalPaid: '0.00',
+      lastExecuted: null,
+      status: 'pending_approval',
+      category: 'Marketing'
+    },
+    {
+      id: 4,
+      recipient: '0x5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d',
+      recipientName: 'Legal Services LLC',
+      amount: '3500.00',
+      token: 'USDC',
+      nextExecution: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // Ready now!
+      frequency: 2592000, // monthly
+      description: 'Monthly legal retainer',
+      requiresApproval: false,
+      approved: true,
+      active: true,
+      executionCount: 12,
+      totalPaid: '42000.00',
+      lastExecuted: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000),
+      status: 'ready_now',
+      category: 'Legal'
+    },
+    {
+      id: 5,
+      recipient: '0x6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e',
+      recipientName: 'Accounting Firm',
+      amount: '2000.00',
+      token: 'USDC',
+      nextExecution: new Date(Date.now() - 2 * 60 * 60 * 1000), // Overdue!
+      frequency: 2592000, // monthly
+      description: 'Monthly bookkeeping services',
+      requiresApproval: false,
+      approved: true,
+      active: true,
+      executionCount: 8,
+      totalPaid: '16000.00',
+      lastExecuted: new Date(Date.now() - 32 * 24 * 60 * 60 * 1000),
+      status: 'overdue',
+      category: 'Accounting'
     }
   ],
 
