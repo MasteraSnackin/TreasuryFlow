@@ -18,7 +18,8 @@ Our Solution: TreasuryFlow uses Arc Network, Circle's stablecoins (USDC/EURC), a
 
 **Cross-chain transfers • Fiat on/off ramps • Embedded wallets • 90% cheaper • 99.99% faster**
 
-[Live Demo](https://treasuryflow.vercel.app) • [Documentation](./docs) • [Bounty Submission](./BOUNTY_COMPLIANCE.md) • [Discord](https://discord.gg/treasuryflow)
+[Live Demo](https://treasuryflow.vercel.app) • [Documentation](./docs) • [Bounty Submission](./BOUNTY_COMPLIANCE.md) • [Discord](https://discord.gg/treasuryflow) • [Video](https://youtu.be/4D_chzDhuhE)
+
 
 **🏆 Built for Arc DeFi Hackathon 2025 - Targeting 4 Bounties*
 
