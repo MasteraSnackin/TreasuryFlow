@@ -74,7 +74,7 @@ TreasuryFlow V3.0 provides:
 
 TreasuryFlow V3.0 addresses **ALL 4 bounties** with production-ready code:
 
-### Bounty #1: Best Smart Contracts on Arc ($10,000)
+### Bounty #1: Best Smart Contracts on Arc
 ✅ **Score: 95/100** | **Status: COMPLETE**
 - Advanced stablecoin logic with multi-currency support
 - 60% gas savings on batch operations
@@ -83,7 +83,7 @@ TreasuryFlow V3.0 addresses **ALL 4 bounties** with production-ready code:
 - Conditional payment execution
 - 48 comprehensive tests passing
 
-### Bounty #2: Best Cross-Chain USDC Experience ($8,000)
+### Bounty #2: Best Cross-Chain USDC Experience
 ✅ **Score: 98/100** | **Status: COMPLETE**
 - Full Circle CCTP integration
 - 7+ blockchain support (Arc, Ethereum, Polygon, Arbitrum, etc.)
@@ -91,7 +91,7 @@ TreasuryFlow V3.0 addresses **ALL 4 bounties** with production-ready code:
 - 0.1% bridge fee + minimal gas
 - Beautiful UI with real-time tracking
 
-### Bounty #3: Best Smart Contract Wallet Infrastructure ($7,000)
+### Bounty #3: Best Smart Contract Wallet Infrastructure
 ✅ **Score: 92/100** | **Status: COMPLETE**
 - Multi-signature security (2-of-N approvals)
 - Department budget management
@@ -99,7 +99,7 @@ TreasuryFlow V3.0 addresses **ALL 4 bounties** with production-ready code:
 - Automated payment scheduling
 - Comprehensive audit trail
 
-### Bounty #4: Best Stablecoin Embedded Wallet Experience ($6,000)
+### Bounty #4: Best Stablecoin Embedded Wallet Experience
 ✅ **Score: 95/100** | **Status: COMPLETE**
 - Circle Wallets SDK integration
 - Circle Gateway for fiat ramps
